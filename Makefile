@@ -1,6 +1,6 @@
 # compiler and flags
 CXX = g++
-CXXFLAGS = -g -std=c++11 -Wall -Wextra -O2
+CXXFLAGS = -std=c++11 -Wall -Wextra -O2
 LDFLAGS = -lgsl -lgslcblas -lz
 
 # executable name

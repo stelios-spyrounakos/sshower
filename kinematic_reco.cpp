@@ -17,6 +17,10 @@ using namespace Eigen;
 
 // returns the unit vector in the direction of the given vector (3D)
 Vector3d unit_vector(const Vector3d& vector) {
+    if (vector.norm() == 0) {
+        Vector3d zero = Vector3d::Zero();
+        return zero;
+    }
     return vector / vector.norm();
 }
 
@@ -35,7 +39,7 @@ double angle_between(const Vector3d& v1, const Vector3d& v2) {
 Matrix3d Get_rotation_matrix(const Vector3d& v1, const Vector3d& v2) {
     Vector3d k = v1.cross(v2);
     Matrix3d I = Matrix3d::Identity();
-    if (k.norm() < 1E-12) { return I; }
+    if (k.norm() < 1e-12) { return I; }
     Vector3d k_unit = unit_vector(k);
     double angle = angle_between(v1, v2);
     Matrix3d K {
@@ -144,8 +148,8 @@ vector<double> Get_boost_beta(double k, const vector<double>& newq,
     vector<double> beta {beta_temp[0], beta_temp[1], beta_temp[2]};
     vector<double> zero {0.0, 0.0, 0.0};
     if (beta_mag >= 1e-12) { return beta; }
-    else if (beta_mag >= 1 - 1e-12) {
-        beta_mag = 1 - 1e-10;
+    else if (beta_mag > 1 - 1e-12) {
+        beta_mag = 1 - 1e-12;
         beta_temp = -beta_mag * (k / kp) * oldp_3mom;
         beta = {beta_temp[0], beta_temp[1], beta_temp[2]};
         return beta;
@@ -309,7 +313,7 @@ vector<Particle> global_mom_cons(const vector<Jet>& showered_jets) {
         qj2.push_back(qj2_temp);
         newqs.push_back(newq);
     }
-
+    /*
     ///// FOR DEBUGGING /////
     for (int i = 0; i < number_of_jets; ++i) {
         vector<double> oldpp = oldps[i];
@@ -324,6 +328,7 @@ vector<Particle> global_mom_cons(const vector<Jet>& showered_jets) {
             << newqq[1] << ", " << newqq[2] << ", " << newqq[3] << ")" << endl;
     }
     /////////////////////////
+    */
 
     // get the k factor for the boosts
     double k = Get_k_fac_2_jets(pj2, qj2, sqrt_s_hat);
@@ -348,20 +353,17 @@ vector<Particle> global_mom_cons(const vector<Jet>& showered_jets) {
 
     for (int i = 0; i < number_of_jets; ++i) {
         Jet jet = showered_jets.at(i);
-        
-        vector<Particle> rotated;
-        vector<double> beta;
-        vector<Particle> boosted;
-
         int number_of_jetparts = jet.particles.size();
+
         if (number_of_jetparts == 1) {
             // do nothing if the particle has not showered
             showered_particles_boosted.push_back(jet.particles.at(0));
         }
         else {
             // rotate and boost the jet particles
-            rotated = rotate_momenta_prog(jet.progenitor, newqs.at(i),
-                                        jet.particles);
+            vector<Particle> rotated = rotate_momenta_prog(jet.progenitor,
+                                                        newqs.at(i),
+                                                        jet.particles);
 
             ///// FOR DEBUGGING /////
             cout << "ROTATION SUCCESS" << endl;
@@ -371,7 +373,7 @@ vector<Particle> global_mom_cons(const vector<Jet>& showered_jets) {
             cout << "COMPUTING BOOST BETA FACTOR: " << endl;
             /////////////////////////
 
-            beta = Get_boost_beta(k, newqs.at(i), oldps.at(i));
+            vector<double> beta = Get_boost_beta(k, newqs.at(i), oldps.at(i));
             
             ///// FOR DEBUGGING /////
             cout << "BOOST BETA FACTOR: "
@@ -379,7 +381,7 @@ vector<Particle> global_mom_cons(const vector<Jet>& showered_jets) {
                 << endl;
             /////////////////////////
 
-            boosted = boost(rotated, beta);
+            vector<Particle> boosted = boost(rotated, beta);
 
             ///// FOR DEBUGGING /////
             cout << "BOOST SUCCESS" << endl;

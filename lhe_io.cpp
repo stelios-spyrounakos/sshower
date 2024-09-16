@@ -215,14 +215,12 @@ void write_lhe(ofstream& outfile, const vector<Event>& events,
         vector<double> helicities;
         vector< vector<int> > relations;
 
-        // set form and precision
-        outfile << scientific << setprecision(10);
         // loop through the particles of the event
         for (size_t partno = 0; partno < event.particles.size(); ++partno) {
             Particle p = event.particles[partno];
             momenta.push_back({p.px, p.py, p.pz, p.E});
             status.push_back(p.status);
-            // sssign relations (same as MadGraph lhe)
+            // assign relations (same as MadGraph lhe)
             if (p.status == -1) {
                 relations.push_back({0, 0});
             } else if (p.status == 1) {
@@ -256,6 +254,9 @@ void write_lhe(ofstream& outfile, const vector<Event>& events,
                 << sqrt(s_hat) << ")\n";
         }
 
+        // set form and precision
+        outfile << scientific << setprecision(10);
+        
         // write event header
         outfile << "<event>\n";
         outfile << momenta.size() << "\t9999\t1.000000\t" << sqrt(s_hat)

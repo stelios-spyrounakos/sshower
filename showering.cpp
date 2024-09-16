@@ -28,6 +28,7 @@ Emission_info generate_emission(double Q, double Q_cutoff, double t_fac,
     double Rand2 = unif(gen);
     double Rand3 = unif(gen);
     double Rand4 = unif(gen);
+
     // initialize alphaS object
     static alphaS aS(0.118, 91.1876);
     static double aS_over = Get_alphaS_over(Q_cutoff, aS);
@@ -37,7 +38,7 @@ Emission_info generate_emission(double Q, double Q_cutoff, double t_fac,
     // get the (candidate) emission scale
 
     ///// FOR DEBUGGING /////
-    cout << "GENERATING t_em" << endl;
+    cout << "GENERATING t_em FOR BRANCHING TYPE " << branching_type << endl;
     /////////////////////////
 
     bool cont_evol;
@@ -46,11 +47,13 @@ Emission_info generate_emission(double Q, double Q_cutoff, double t_fac,
     em_info.continue_evolution = cont_evol;
 
     ///// FOR DEBUGGING /////
-    cout << "GENERATED t_em = " << em_info.t_em << endl;
+    cout << "GENERATED t_em: " << em_info.t_em << " AND continue_evolution: "
+        << em_info.continue_evolution << endl;
     /////////////////////////
 
     // stop if no solution is found
     if (em_info.continue_evolution == false) {
+        em_info.t_em = 0.0;
         em_info.z_em = 1.0;
         em_info.pT2_em = 0.0;
         em_info.phi = 0.0;
@@ -75,7 +78,7 @@ Emission_info generate_emission(double Q, double Q_cutoff, double t_fac,
                                 aS_over, Rand2);
         break;
     default:
-        cout << "Invalid branching" << endl;
+        cerr << "Invalid branching" << endl;
         break;
     }
 
@@ -85,32 +88,57 @@ Emission_info generate_emission(double Q, double Q_cutoff, double t_fac,
     // (uniformly, does not take into account spin correlations)
     em_info.phi = (2 * unif(gen) - 1) * M_PI;
 
+    ///// FOR DEBUGGING /////
+    cout << "VETOES START" << endl;
+    /////////////////////////
+
     // perform the vetos
-    if (em_info.pT2_em < 0.0) { em_info.generated_em = false; }
+    if (em_info.pT2_em < 0.0) {
+        em_info.generated_em = false;
+        ///// FOR DEBUGGING /////
+        cout << "VETOED DUE TO pT2" << endl;
+        /////////////////////////
+    }
     switch (branching_type) {
     case 1:
         if (Pqq(em_info.z_em) / Pqq_over(em_info.z_em) < Rand3) {
             em_info.generated_em = false;
+            ///// FOR DEBUGGING /////
+            cout << "VETOED DUE TO KERNEL" << endl;
+            /////////////////////////
         }
         break;
     case 2:
         if (Pgq(em_info.z_em) / Pgq_over(em_info.z_em) < Rand3) {
             em_info.generated_em = false;
+            ///// FOR DEBUGGING /////
+            cout << "VETOED DUE TO KERNEL" << endl;
+            /////////////////////////
         }
         break;
     case 3:
         if (Pgg(em_info.z_em) / Pgg_over(em_info.z_em) < Rand3) {
             em_info.generated_em = false;
+            ///// FOR DEBUGGING /////
+            cout << "VETOED DUE TO KERNEL" << endl;
+            /////////////////////////
         }
         break;
     default:
-        cout << "Invalid branching" << endl;
+        cerr << "Invalid branching" << endl;
         break;
     }
     if (Get_alphaS(em_info.t_em, em_info.z_em, Q_cutoff, aS)
         / aS_over < Rand4) {
         em_info.generated_em = false;
+        ///// FOR DEBUGGING /////
+        cout << "VETOED DUE TO aS" << endl;
+        /////////////////////////
     }
+
+    ///// FOR DEBUGGING /////
+    cout << "VETOES OVER" << endl;
+    /////////////////////////
 
     // get the virtual mass squared
     em_info.mvirt2 = Get_mvirt2(em_info.t_em, em_info.z_em);
@@ -292,6 +320,10 @@ Jet shower_progenitor(const Particle& p, double Q_cutoff, double t_fac,
     // and the process repeats with the first pc added to the jet as pa and
     // when its own now chain of b particles ends, it moves on to the next pc
     // added and the cycle continues
+
+    ///// FOR DEBUGGING /////
+    cout << "STARTING SHOWERING PROGENITOR LOOP" << endl;
+    /////////////////////////
     while (i < jet.particles.size()) {
         Particle pa = jet.particles.at(i);
         Particle pb = {0, 0, 0, 0, 0, 0, 0, 0, 0, true};
@@ -305,6 +337,9 @@ Jet shower_progenitor(const Particle& p, double Q_cutoff, double t_fac,
         jet.particles.push_back(pc);
     }
     jet.particles.shrink_to_fit();
+    ///// FOR DEBUGGING /////
+    cout << "SHOWERING PROGENITOR LOOP END" << endl;
+    /////////////////////////
 
     return jet;
 }

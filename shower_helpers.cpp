@@ -16,11 +16,6 @@ using namespace std;
 double Get_alphaS(double t, double z, double Q_cutoff, const alphaS& aS) {
     double scale = z * (1.0 - z) * sqrt(t);     // = pT_emission
     if (scale < Q_cutoff) { return aS.alphasQ(Q_cutoff); }
-
-    ///// FOR DEBUGGING /////
-    cout << "Get_alphaS CALLED. aS: " << aS.alphasQ(scale) << endl;
-    /////////////////////////
-
     return aS.alphasQ(scale);
 }
 
@@ -86,7 +81,7 @@ double em_scale_func(double t, void *params) {
                     - rho_gg(zm_over(t, Q_cutoff), aS_over);
         break;
     default:
-        cout << "Invalid branching" << endl;
+        cerr << "Invalid branching" << endl;
         break;
     }
 

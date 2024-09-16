@@ -39,7 +39,7 @@ int main(int argc, char* argv[]) {
     vector<Event> showered_events;
     bool check_mom_conservation = true;
     showered_events.reserve(n_events);
-    for (int i = 0; i < 10; ++i) {
+    for (int i = 0; i < 50; ++i) {
         Event showered_event;
 
         ///// FOR DEBUGGING /////
@@ -63,7 +63,11 @@ int main(int argc, char* argv[]) {
                 << ")." << endl;
         }
 
-        show_progress_bar(i / 10);
+        show_progress_bar(i / 49.0);
+
+        ///// FOR DEBUGGING /////
+        cout << endl << endl << endl << endl << endl;
+        /////////////////////////
     }
 
     // write output lhe file
