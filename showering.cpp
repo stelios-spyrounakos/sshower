@@ -258,7 +258,11 @@ void branching_1to2(Particle& pa, Particle& pb, Particle& pc,
 
     // rotate particles b and c to the original direction of their parent a
     vector<Particle> emissions{pb, pc};
-    
+
+    vector<Particle> emissions_rot = rotate_momenta_lab(pa, emissions);
+    pb = emissions_rot[0];
+    pc = emissions_rot[1];
+
     ///// FOR DEBUGGING /////
     cout << "PARENT PARTICLE A INFO: " << endl;
     cout << "id: " << pa.id << ", status: " << pa.status << ", px: " << pa.px
@@ -267,26 +271,6 @@ void branching_1to2(Particle& pa, Particle& pb, Particle& pc,
         << ", z_at_em: " << pa.z_at_em << ", stopped_evolving: "
         << pa.stopped_evolving << endl;
 
-    cout << "EMITTED PARTICLE B INFO BEFORE ROT: " << endl;
-    cout << "id: " << pb.id << ", status: " << pb.status << ", px: " << pb.px
-        << ", py: " << pb.py << ", pz: " << pb.pz << ", E: " << pb.E
-        << ", m: " << pb.m << ", t_at_em: " << pb.t_at_em
-        << ", z_at_em: " << pb.z_at_em << ", stopped_evolving: "
-        << pb.stopped_evolving << endl;
-
-    cout << "EMITTED PARTICLE C INFO BEFORE ROT: " << endl;
-    cout << "id: " << pc.id << ", status: " << pc.status << ", px: " << pc.px
-        << ", py: " << pc.py << ", pz: " << pc.pz << ", E: " << pc.E
-        << ", m: " << pc.m << ", t_at_em: " << pc.t_at_em
-        << ", z_at_em: " << pc.z_at_em << ", stopped_evolving: "
-        << pc.stopped_evolving << endl;
-    /////////////////////////
-
-    vector<Particle> emissions_rot = rotate_momenta_lab(pa, emissions);
-    pb = emissions_rot[0];
-    pc = emissions_rot[1];
-
-    ///// FOR DEBUGGING /////
     cout << "EMITTED PARTICLE B INFO AFTER ROT: " << endl;
     cout << "id: " << pb.id << ", status: " << pb.status << ", px: " << pb.px
         << ", py: " << pb.py << ", pz: " << pb.pz << ", E: " << pb.E
@@ -313,6 +297,7 @@ Jet shower_progenitor(const Particle& p, double Q_cutoff, double t_fac,
     jet.particles.reserve(50);
     jet.particles.push_back(p);
     int i = 0;
+    
     // this loops branches the b particle of the previous branch (replaces pa
     // with pb and adds pc to the jet but leaves the counter the same so the
     // new pb becomes pa in the next loop) and adds pc to the jet. When the
@@ -320,10 +305,6 @@ Jet shower_progenitor(const Particle& p, double Q_cutoff, double t_fac,
     // and the process repeats with the first pc added to the jet as pa and
     // when its own now chain of b particles ends, it moves on to the next pc
     // added and the cycle continues
-
-    ///// FOR DEBUGGING /////
-    cout << "STARTING SHOWERING PROGENITOR LOOP" << endl;
-    /////////////////////////
     while (i < jet.particles.size()) {
         Particle pa = jet.particles.at(i);
         Particle pb = {0, 0, 0, 0, 0, 0, 0, 0, 0, true};
@@ -337,9 +318,6 @@ Jet shower_progenitor(const Particle& p, double Q_cutoff, double t_fac,
         jet.particles.push_back(pc);
     }
     jet.particles.shrink_to_fit();
-    ///// FOR DEBUGGING /////
-    cout << "SHOWERING PROGENITOR LOOP END" << endl;
-    /////////////////////////
 
     return jet;
 }
@@ -400,9 +378,11 @@ vector<Particle> shower_event(Event& event, double Q_cutoff) {
     // merge the initial particles with the jets
     final_particles.reserve(final_particles.size() + mom_con_jet_parts.size());
     
+    /*
     final_particles.insert(final_particles.end(),
                         make_move_iterator(mom_con_jet_parts.begin()),
                         make_move_iterator(mom_con_jet_parts.end()));
+    */
     
 
     move(mom_con_jet_parts.begin(), mom_con_jet_parts.end(),

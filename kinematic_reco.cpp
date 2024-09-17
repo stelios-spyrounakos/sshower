@@ -212,7 +212,8 @@ double k_fac_eq(double k, void *params) {
 }
 
 // solves for the k factor
-// WARNING: problem with the root finding method
+// WARNING: problem with the root finding method (bracketing methods
+// probably not appropriate)
 double Get_k_fac(vector<double> pj2, vector<double> qj2, double sqrt_s_hat) {
     double tolerance = 0.0001;
     int status;
@@ -313,38 +314,14 @@ vector<Particle> global_mom_cons(const vector<Jet>& showered_jets) {
         qj2.push_back(qj2_temp);
         newqs.push_back(newq);
     }
-    /*
-    ///// FOR DEBUGGING /////
-    for (int i = 0; i < number_of_jets; ++i) {
-        vector<double> oldpp = oldps[i];
-        vector<double> newqq = newqs[i];
-        cout << "JET " << i << " PROGENITOR pj2: " << pj2[i]
-            << ", JET qj2: " << qj2[i] << endl;
-
-        cout << "JET " << i << " PROGENITOR oldp: (" << oldpp[0] << ", "
-            << oldpp[1] << ", " << oldpp[2] << ", " << oldpp[3] << ")" << endl;
-
-        cout << "JET " << i << " JET newq: (" << newqq[0] << ", "
-            << newqq[1] << ", " << newqq[2] << ", " << newqq[3] << ")" << endl;
-    }
-    /////////////////////////
-    */
 
     // get the k factor for the boosts
     double k = Get_k_fac_2_jets(pj2, qj2, sqrt_s_hat);
-
-    ///// FOR DEBUGGING /////
-    cout << "K FACTOR: " << k << endl;
-    /////////////////////////
 
     // now we rotate and boost the particles in the jets for global momentum
     // consrvation
     vector<Particle> showered_particles_boosted;
     int total_jetparticles = 0;
-
-    ///// FOR DEBUGGING /////
-    cout << "JET RECO LOOPS START" << k << endl;
-    /////////////////////////
 
     for (int i = 0; i < number_of_jets; ++i) {
        total_jetparticles += showered_jets.at(i).particles.size();    
@@ -360,52 +337,22 @@ vector<Particle> global_mom_cons(const vector<Jet>& showered_jets) {
             showered_particles_boosted.push_back(jet.particles.at(0));
         }
         else {
+            
             // rotate and boost the jet particles
             vector<Particle> rotated = rotate_momenta_prog(jet.progenitor,
                                                         newqs.at(i),
                                                         jet.particles);
 
-            ///// FOR DEBUGGING /////
-            cout << "ROTATION SUCCESS" << endl;
-            /////////////////////////
-
-            ///// FOR DEBUGGING /////
-            cout << "COMPUTING BOOST BETA FACTOR: " << endl;
-            /////////////////////////
 
             vector<double> beta = Get_boost_beta(k, newqs.at(i), oldps.at(i));
-            
-            ///// FOR DEBUGGING /////
-            cout << "BOOST BETA FACTOR: "
-                << beta[0] * beta[0] + beta[1] * beta[1] + beta[2] * beta[2]
-                << endl;
-            /////////////////////////
 
             vector<Particle> boosted = boost(rotated, beta);
 
-            ///// FOR DEBUGGING /////
-            cout << "BOOST SUCCESS" << endl;
-            /////////////////////////
-
-            ///// FOR DEBUGGING /////
-            cout << "JET PARTICLES RECO LOOP START" << k << endl;
-            /////////////////////////
             for (int j = 0; j < number_of_jetparts; ++j) {
                 showered_particles_boosted.push_back(boosted.at(j));
             }
-            ///// FOR DEBUGGING /////
-            cout << "JET PARTICLES RECO LOOP END" << k << endl;
-            /////////////////////////
-
-            ///// FOR DEBUGGING /////
-            cout << "RECO PARTICLES ADDED TO VECTOR" << endl;
-            /////////////////////////
         }
     }
-
-    ///// FOR DEBUGGING /////
-    cout << "JET RECO LOOPS END" << k << endl;
-    /////////////////////////
 
     return showered_particles_boosted;
 }

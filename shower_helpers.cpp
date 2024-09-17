@@ -9,6 +9,7 @@
 #include <gsl/gsl_errno.h>
 #include <gsl/gsl_math.h>
 #include <gsl/gsl_roots.h>
+#include <gsl/gsl_min.h>
 
 using namespace std;
 
@@ -41,7 +42,12 @@ double Get_z_em(double (*inverse_rho)(double, double),
     double arg = rho(zm_over(t, Q_cutoff), aS_over) + Rand * 
                     (rho(zp_over(t, Q_cutoff), aS_over) -
                     rho(zm_over(t, Q_cutoff), aS_over));
-    return inverse_rho(arg, aS_over);
+    double z =  inverse_rho(arg, aS_over);
+
+    // to avoid possible issues at the boundaries
+    const double epsilon = 1e-12;
+    z = max(epsilon, min(1.0 - epsilon, z));
+    return z;
 }
 
 // returns the transverse momentum squared of the emission
@@ -112,20 +118,29 @@ double Get_t_em(double Q, double Q_cutoff, double aS_over, double Rand,
     gsl_function F;
     F.function = &em_scale_func;
     F.params = &params;
-    T = gsl_root_fsolver_brent;
+    T = gsl_root_fsolver_bisection;
     s = gsl_root_fsolver_alloc(T);
     gsl_root_fsolver_set(s, &F, t_min, t_max);
 
+    //double prev_root = 0.0;
     do {
         iter++;
         status = gsl_root_fsolver_iterate(s);
         root = gsl_root_fsolver_root(s);
         t_min = gsl_root_fsolver_x_lower(s);
         t_max = gsl_root_fsolver_x_upper(s);
-        status = gsl_root_test_interval(t_min, t_max, 0, tolerance);
+        status = gsl_root_test_interval(t_min, t_max, tolerance, 0);
+        //status = gsl_root_test_delta(root, prev_root, tolerance, 0);
+        //prev_root = root;
     } while (status == GSL_CONTINUE && iter < max_iter);
     
     gsl_root_fsolver_free(s);
+
+    ///// FOR DEBUGGING /////
+    cout << "em_scale_func(root, &params): " << em_scale_func(root, &params)
+        << ", TOLERANCE: " << tolerance << ", AND ITERATIONS: " << iter
+        << ", WITH STATUS: " << status << endl;
+    /////////////////////////
 
     if ( abs(em_scale_func(root, &params)) > tolerance ) {
         continue_evol = false;

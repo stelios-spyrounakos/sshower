@@ -32,14 +32,14 @@ int main(int argc, char* argv[]) {
     vector<double> weights;
     vector< map<string, double> > multiweights;
     read_lhefile(infilename, events, weights, multiweights);
-    int n_events = events.size();
+    int n_events = 100; // events.size();
 
     // shower events
     double Q_cutoff = 0.935;    // (to match with Herwig 7)
     vector<Event> showered_events;
     bool check_mom_conservation = true;
     showered_events.reserve(n_events);
-    for (int i = 0; i < 50; ++i) {
+    for (int i = 0; i < n_events; ++i) {
         Event showered_event;
 
         ///// FOR DEBUGGING /////
@@ -63,7 +63,7 @@ int main(int argc, char* argv[]) {
                 << ")." << endl;
         }
 
-        show_progress_bar(i / 49.0);
+        show_progress_bar(i / (n_events - 1));
 
         ///// FOR DEBUGGING /////
         cout << endl << endl << endl << endl << endl;
