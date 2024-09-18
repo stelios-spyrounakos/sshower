@@ -32,7 +32,8 @@ int main(int argc, char* argv[]) {
     vector<double> weights;
     vector< map<string, double> > multiweights;
     read_lhefile(infilename, events, weights, multiweights);
-    int n_events = 100; // events.size();
+    int n_events = events.size();
+    //int n_events = 100;
 
     // shower events
     double Q_cutoff = 0.935;    // (to match with Herwig 7)
