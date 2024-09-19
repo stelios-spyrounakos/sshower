@@ -46,8 +46,20 @@ struct Event {
 void branching_1to2(Particle& pa, Particle& pb, Particle& pc,
                     double Q_cutoff, double t_fac, double t_cutoff);
 
+// perform a single 1->2 branching (pb gets the z fraction and pc the 1-z)
+void branching_1to2_v2(Particle& pa, Particle& pb, Particle& pc,
+                    double Q_cutoff, double t_fac, double t_cutoff);
+
+// shower a particle
+std::vector<Particle> shower_particle(const Particle& p, double Q_cutoff,
+                                    double t_fac, double t_cutoff);
+
+// shower a particle (p is in the emissions vector)
+void shower_particle_v2(Particle& p, double Q_cutoff, double t_fac,
+                    double t_cutoff, std::vector<Particle>& emissions);
+
 // shower a progenitor
-Jet shower_progenitor(const Particle& p, double Q_cutoff, double t_fac,
+Jet shower_progenitor(const Particle& prog, double Q_cutoff, double t_fac,
                     double t_cutoff);
 
 // shower an event (showers the appropriate hard process generated particles)

@@ -9,7 +9,6 @@
 #include <gsl/gsl_errno.h>
 #include <gsl/gsl_math.h>
 #include <gsl/gsl_roots.h>
-#include <gsl/gsl_min.h>
 
 using namespace std;
 
@@ -129,7 +128,7 @@ double Get_t_em(double Q, double Q_cutoff, double aS_over, double Rand,
         root = gsl_root_fsolver_root(s);
         t_min = gsl_root_fsolver_x_lower(s);
         t_max = gsl_root_fsolver_x_upper(s);
-        status = gsl_root_test_interval(t_min, t_max, tolerance, 0);
+        status = gsl_root_test_interval(t_min, t_max, 1e-8, 0);
         //status = gsl_root_test_delta(root, prev_root, tolerance, 0);
         //prev_root = root;
     } while (status == GSL_CONTINUE && iter < max_iter);

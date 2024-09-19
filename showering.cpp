@@ -22,7 +22,7 @@ Emission_info generate_emission(double Q, double Q_cutoff, double t_fac,
     //static mt19937 gen(time(nullptr));
     static random_device rd;        // to obtain a random seed
     static mt19937 gen(rd());       // standard mersenne twister engine
-    static uniform_real_distribution<> unif(0.0000000001, 1.0);
+    static uniform_real_distribution<> unif(1e-12, 1.0 - 1e-12);
     // produce the random numbers
     double Rand1 = unif(gen);
     double Rand2 = unif(gen);
@@ -199,11 +199,12 @@ void branching_1to2(Particle& pa, Particle& pb, Particle& pc,
                 em_info_temp = generate_emission(Q, Q_cutoff, t_fac,
                                                 branching_type);
                 // skip if no solution for t is found
-                if (em_info_temp.continue_evolution == false) {
-                    continue;
-                }
+                //if (em_info_temp.continue_evolution == false) {
+                //    continue;
+                //}
 
-                if (em_info_temp.t_em > em_info.t_em) {
+                if (em_info_temp.continue_evolution == true
+                    && em_info_temp.t_em > em_info.t_em) {
                     em_info = em_info_temp;
                     // the quark antiquark pair
                     pb.id = flavor;
@@ -289,13 +290,169 @@ void branching_1to2(Particle& pa, Particle& pb, Particle& pc,
     return;
 }
 
-// shower a progenitor
-Jet shower_progenitor(const Particle& p, double Q_cutoff, double t_fac,
-                    double t_cutoff) {
-    Jet jet;
-    jet.progenitor = p;
-    jet.particles.reserve(50);
-    jet.particles.push_back(p);
+// perform a single 1->2 branching (pb gets the z fraction and pc the 1-z)
+void branching_1to2_v2(Particle& pa, Particle& pb, Particle& pc,
+                    double Q_cutoff, double t_fac, double t_cutoff) {
+    // find the emission type and generate emission information
+    int branching_type;
+    Emission_info em_info;
+    Emission_info em_info_temp;
+    double Q = pa.z_at_em * sqrt(pa.t_at_em);
+    
+    // try branching while the emission is vetoed. Stop if an emission is
+    // generated or the evolution of the particle cannot continue
+    if (Q < sqrt(t_cutoff)) { 
+        pa.stopped_evolving = true;
+        return; 
+    }
+    // for quarks we only have q->qg emissions (we ignore the top) and the
+    // flavor of the "produced" quark is the same
+    if (abs(pa.id) > 0 && abs(pa.id) < 6) {
+        branching_type = 1;
+        do {
+            if (Q < sqrt(t_cutoff)) { 
+                pa.stopped_evolving = true;
+                return; 
+            }
+            em_info = generate_emission(Q, Q_cutoff, t_fac, branching_type);
+            Q = sqrt(em_info.t_em);
+        } while (em_info.generated_em == false
+            && em_info.continue_evolution == true);
+        // the quark and the gluon
+        pb.id = pa.id;
+        pc.id = 21;
+    }
+    // for gluons we pick the emission with the largest t out of the
+    // possible ones
+    else if (abs(pa.id) == 21) {
+        // check for branching type 3 (g->gg) and the 5 (ignoring top)
+        // flavor possibilities of branching type 2 (g->qqbar). Start with 3
+        branching_type = 3;
+        double Q_temp = Q;
+        do {
+            if (Q_temp < sqrt(t_cutoff)) { 
+                em_info.continue_evolution = false; 
+            }
+            em_info = generate_emission(Q_temp, Q_cutoff, t_fac,
+                                        branching_type);
+            Q_temp = sqrt(em_info.t_em);
+        } while (em_info.generated_em == false
+            && em_info.continue_evolution == true);
+        // set t to 0 if no solution is found here so that any solution
+        // found next will win
+        if (em_info.continue_evolution == false) {
+            em_info.t_em = 0;
+        }
+        // the gluons
+        pb.id = 21;
+        pc.id = 21;
+        // if an emission has a larger t we will replace the previous
+        branching_type = 2;
+        for (int flavor = 1; flavor < 6; ++flavor) {
+            Q_temp = Q;
+            do {
+                if (Q_temp < sqrt(t_cutoff)) { 
+                    em_info_temp.continue_evolution = false; 
+                }
+                em_info_temp = generate_emission(Q_temp, Q_cutoff, t_fac,
+                                                branching_type);
+                Q_temp = sqrt(em_info_temp.t_em);
+            } while (em_info_temp.generated_em == false
+            && em_info_temp.continue_evolution == true);
+            // skip if no solution for t is found
+            if (em_info_temp.continue_evolution == false) {
+                continue;
+            }
+
+            if (em_info_temp.t_em > em_info.t_em) {
+                em_info = em_info_temp;
+                // the quark antiquark pair
+                pb.id = flavor;
+                pc.id = -flavor;
+             }
+            }
+    }
+
+    ///// FOR DEBUGGING /////
+    cout << "EM INFO FROM branching_1to2:" << endl;
+    cout << "t_em: " << em_info.t_em << ", z_em: " << em_info.z_em
+        << ", pT2_em: " << em_info.pT2_em << ", phi: " << em_info.phi
+        << ", mvirt2: " << em_info.mvirt2 
+        << ", continue_evolution: " << em_info.continue_evolution
+        << ", generated_em: " << em_info.generated_em << endl;
+    /////////////////////////
+
+    if (em_info.continue_evolution == false) {
+        pa.stopped_evolving = true;
+        return;
+    }
+    // t and z for b and c at emission
+    pb.t_at_em = em_info.t_em;
+    pc.t_at_em = em_info.t_em;
+    pb.z_at_em = em_info.z_em;
+    pc.z_at_em = 1.0 - em_info.z_em;
+
+    // constructing the momenta of pb and pc for pa in the z axis
+    double pT = sqrt(em_info.pT2_em);
+    double pmag = sqrt(pa.px * pa.px + pa.py * pa.py + pa.pz * pa.pz);
+
+    pb.px = pT * cos(em_info.phi);
+    pb.py = pT * sin(em_info.phi);
+    pb.pz = em_info.z_em * pmag;
+    pb.E = sqrt(pb.px * pb.px + pb.py * pb.py + pb.pz * pb.pz);
+
+    pc.px = - pT * cos(em_info.phi);
+    pc.py = - pT * sin(em_info.phi);
+    pc.pz = (1.0 - em_info.z_em) * pmag;
+    pc.E = sqrt(pc.px * pc.px + pc.py * pc.py + pc.pz * pc.pz);
+
+    // the rest of the particle info
+    pb.status = 1;
+    pc.status = 1;
+    pb.m = 0;
+    pc.m = 0;
+    pb.stopped_evolving = false;
+    pc.stopped_evolving = false;
+
+    // rotate particles b and c to the original direction of their parent a
+    vector<Particle> emissions{pb, pc};
+
+    vector<Particle> emissions_rot = rotate_momenta_lab(pa, emissions);
+    pb = emissions_rot[0];
+    pc = emissions_rot[1];
+
+    ///// FOR DEBUGGING /////
+    cout << "PARENT PARTICLE A INFO: " << endl;
+    cout << "id: " << pa.id << ", status: " << pa.status << ", px: " << pa.px
+        << ", py: " << pa.py << ", pz: " << pa.pz << ", E: " << pa.E
+        << ", m: " << pa.m << ", t_at_em: " << pa.t_at_em
+        << ", z_at_em: " << pa.z_at_em << ", stopped_evolving: "
+        << pa.stopped_evolving << endl;
+
+    cout << "EMITTED PARTICLE B INFO AFTER ROT: " << endl;
+    cout << "id: " << pb.id << ", status: " << pb.status << ", px: " << pb.px
+        << ", py: " << pb.py << ", pz: " << pb.pz << ", E: " << pb.E
+        << ", m: " << pb.m << ", t_at_em: " << pb.t_at_em
+        << ", z_at_em: " << pb.z_at_em << ", stopped_evolving: "
+        << pb.stopped_evolving << endl;
+
+    cout << "EMITTED PARTICLE C INFO AFTER ROT: " << endl;
+    cout << "id: " << pc.id << ", status: " << pc.status << ", px: " << pc.px
+        << ", py: " << pc.py << ", pz: " << pc.pz << ", E: " << pc.E
+        << ", m: " << pc.m << ", t_at_em: " << pc.t_at_em
+        << ", z_at_em: " << pc.z_at_em << ", stopped_evolving: "
+        << pc.stopped_evolving << endl;
+    /////////////////////////
+
+    return;
+}
+
+// shower a particle
+vector<Particle> shower_particle(const Particle& p, double Q_cutoff,
+                                double t_fac, double t_cutoff) {
+    vector<Particle> particles;
+    particles.reserve(25);
+    particles.push_back(p);
     int i = 0;
     
     // this loops branches the b particle of the previous branch (replaces pa
@@ -305,8 +462,8 @@ Jet shower_progenitor(const Particle& p, double Q_cutoff, double t_fac,
     // and the process repeats with the first pc added to the jet as pa and
     // when its own now chain of b particles ends, it moves on to the next pc
     // added and the cycle continues
-    while (i < jet.particles.size()) {
-        Particle pa = jet.particles.at(i);
+    while (i < particles.size()) {
+        Particle pa = particles.at(i);
         Particle pb = {0, 0, 0, 0, 0, 0, 0, 0, 0, true};
         Particle pc = {0, 0, 0, 0, 0, 0, 0, 0, 0, true};
         branching_1to2(pa, pb, pc, Q_cutoff, t_fac, t_cutoff);
@@ -314,15 +471,55 @@ Jet shower_progenitor(const Particle& p, double Q_cutoff, double t_fac,
             ++i;
             continue;
         }
-        jet.particles.at(i) = pb;
-        jet.particles.push_back(pc);
+        particles.at(i) = pb;
+        particles.push_back(pc);
     }
-    jet.particles.shrink_to_fit();
-
-    return jet;
+    particles.shrink_to_fit();
+    
+    return particles;
 }
 
+// shower a particle recursive version (p is in the emissions vector)
+// WARNING: possible implementation problem
+void shower_particle_v2(Particle& p, double Q_cutoff, double t_fac,
+                    double t_cutoff, vector<Particle>& emissions) {
+    Particle pb = {0, 0, 0, 0, 0, 0, 0, 0, 0, true};
+    Particle pc = {0, 0, 0, 0, 0, 0, 0, 0, 0, true};
+    branching_1to2(p, pb, pc, Q_cutoff, t_fac, t_cutoff);
+    if (p.stopped_evolving == false) {
+        p = pb;
+        emissions.push_back(pc);
+        shower_particle_v2(p, Q_cutoff, t_fac, t_cutoff, emissions);
+        shower_particle_v2(pc, Q_cutoff, t_fac, t_cutoff, emissions);
+    }
+}
 
+// shower a progenitor
+Jet shower_progenitor(const Particle& prog, double Q_cutoff, double t_fac,
+                    double t_cutoff) {
+    Jet jet;
+    jet.progenitor = prog;
+
+    // for the first version
+    ///*
+    jet.particles = shower_particle(prog, Q_cutoff, t_fac, t_cutoff);
+
+    return jet;
+    //*/
+
+    // for the second version
+    /*
+    Particle prog_cp = prog;
+    vector<Particle> emissions;
+    emissions.reserve(25);
+    emissions.push_back(prog_cp);
+    shower_particle_v2(prog_cp, Q_cutoff, t_fac, t_cutoff, emissions);
+    emissions.shrink_to_fit();
+    jet.particles = emissions;
+
+    return jet;
+    */
+}
 
 // shower an event (showers the appropriate hard process generated particles)
 vector<Particle> shower_event(Event& event, double Q_cutoff) {
@@ -332,7 +529,7 @@ vector<Particle> shower_event(Event& event, double Q_cutoff) {
     double t_cutoff = 4 * t_min;
     // t_fac is a factor that modifies the allowed range of t, so a t too close
     // to the cutoff t_c is not returned (t_c = 4*t_0, where t_0 = Q_cutoff^2)
-    double t_fac = 3.999;
+    double t_fac = 3.9999;
 
     vector<Particle> final_particles;
     vector<Jet> jets;
