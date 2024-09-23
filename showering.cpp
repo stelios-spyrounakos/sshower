@@ -37,19 +37,23 @@ Emission_info generate_emission(double Q, double Q_cutoff, double t_fac,
     em_info.generated_em = true;
     // get the (candidate) emission scale
 
+    /*
     ///// FOR DEBUGGING /////
     cout << "GENERATING t_em FOR BRANCHING TYPE " << branching_type << endl;
     /////////////////////////
+    */
 
     bool cont_evol;
     em_info.t_em = Get_t_em(Q, Q_cutoff, aS_over, Rand1, t_fac,
                     branching_type, cont_evol);
     em_info.continue_evolution = cont_evol;
 
+    /*
     ///// FOR DEBUGGING /////
     cout << "GENERATED t_em: " << em_info.t_em << " AND continue_evolution: "
         << em_info.continue_evolution << endl;
     /////////////////////////
+    */
 
     // stop if no solution is found
     if (em_info.continue_evolution == false) {
@@ -88,40 +92,30 @@ Emission_info generate_emission(double Q, double Q_cutoff, double t_fac,
     // (uniformly, does not take into account spin correlations)
     em_info.phi = (2 * unif(gen) - 1) * M_PI;
 
+    /*
     ///// FOR DEBUGGING /////
     cout << "VETOES START" << endl;
     /////////////////////////
+    */
 
     // perform the vetos
     if (em_info.pT2_em < 0.0) {
         em_info.generated_em = false;
-        ///// FOR DEBUGGING /////
-        cout << "VETOED DUE TO pT2" << endl;
-        /////////////////////////
     }
     switch (branching_type) {
     case 1:
         if (Pqq(em_info.z_em) / Pqq_over(em_info.z_em) < Rand3) {
             em_info.generated_em = false;
-            ///// FOR DEBUGGING /////
-            cout << "VETOED DUE TO KERNEL" << endl;
-            /////////////////////////
         }
         break;
     case 2:
         if (Pgq(em_info.z_em) / Pgq_over(em_info.z_em) < Rand3) {
             em_info.generated_em = false;
-            ///// FOR DEBUGGING /////
-            cout << "VETOED DUE TO KERNEL" << endl;
-            /////////////////////////
         }
         break;
     case 3:
         if (Pgg(em_info.z_em) / Pgg_over(em_info.z_em) < Rand3) {
             em_info.generated_em = false;
-            ///// FOR DEBUGGING /////
-            cout << "VETOED DUE TO KERNEL" << endl;
-            /////////////////////////
         }
         break;
     default:
@@ -131,14 +125,13 @@ Emission_info generate_emission(double Q, double Q_cutoff, double t_fac,
     if (Get_alphaS(em_info.t_em, em_info.z_em, Q_cutoff, aS)
         / aS_over < Rand4) {
         em_info.generated_em = false;
-        ///// FOR DEBUGGING /////
-        cout << "VETOED DUE TO aS" << endl;
-        /////////////////////////
     }
 
+    /*
     ///// FOR DEBUGGING /////
     cout << "VETOES OVER" << endl;
     /////////////////////////
+    */
 
     // get the virtual mass squared
     em_info.mvirt2 = Get_mvirt2(em_info.t_em, em_info.z_em);
@@ -216,6 +209,7 @@ void branching_1to2(Particle& pa, Particle& pb, Particle& pc,
     } while (em_info.generated_em == false
             && em_info.continue_evolution == true);
 
+    /*
     ///// FOR DEBUGGING /////
     cout << "EM INFO FROM branching_1to2:" << endl;
     cout << "t_em: " << em_info.t_em << ", z_em: " << em_info.z_em
@@ -224,6 +218,7 @@ void branching_1to2(Particle& pa, Particle& pb, Particle& pc,
         << ", continue_evolution: " << em_info.continue_evolution
         << ", generated_em: " << em_info.generated_em << endl;
     /////////////////////////
+    */
 
     if (em_info.continue_evolution == false) {
         pa.stopped_evolving = true;
@@ -264,6 +259,7 @@ void branching_1to2(Particle& pa, Particle& pb, Particle& pc,
     pb = emissions_rot[0];
     pc = emissions_rot[1];
 
+    /*
     ///// FOR DEBUGGING /////
     cout << "PARENT PARTICLE A INFO: " << endl;
     cout << "id: " << pa.id << ", status: " << pa.status << ", px: " << pa.px
@@ -286,6 +282,7 @@ void branching_1to2(Particle& pa, Particle& pb, Particle& pc,
         << ", z_at_em: " << pc.z_at_em << ", stopped_evolving: "
         << pc.stopped_evolving << endl;
     /////////////////////////
+    */
 
     return;
 }
@@ -373,6 +370,7 @@ void branching_1to2_v2(Particle& pa, Particle& pb, Particle& pc,
             }
     }
 
+    /*
     ///// FOR DEBUGGING /////
     cout << "EM INFO FROM branching_1to2:" << endl;
     cout << "t_em: " << em_info.t_em << ", z_em: " << em_info.z_em
@@ -381,6 +379,7 @@ void branching_1to2_v2(Particle& pa, Particle& pb, Particle& pc,
         << ", continue_evolution: " << em_info.continue_evolution
         << ", generated_em: " << em_info.generated_em << endl;
     /////////////////////////
+    */
 
     if (em_info.continue_evolution == false) {
         pa.stopped_evolving = true;
@@ -421,6 +420,7 @@ void branching_1to2_v2(Particle& pa, Particle& pb, Particle& pc,
     pb = emissions_rot[0];
     pc = emissions_rot[1];
 
+    /*
     ///// FOR DEBUGGING /////
     cout << "PARENT PARTICLE A INFO: " << endl;
     cout << "id: " << pa.id << ", status: " << pa.status << ", px: " << pa.px
@@ -443,6 +443,7 @@ void branching_1to2_v2(Particle& pa, Particle& pb, Particle& pc,
         << ", z_at_em: " << pc.z_at_em << ", stopped_evolving: "
         << pc.stopped_evolving << endl;
     /////////////////////////
+    */
 
     return;
 }
@@ -545,15 +546,19 @@ vector<Particle> shower_event(Event& event, double Q_cutoff) {
             continue;
         }
 
+        /*
         ///// FOR DEBUGGING /////
         cout << "SHOWERING PROGENITOR " << i << endl;
         /////////////////////////
+        */
 
         Jet jet = shower_progenitor(*p, Q_cutoff, t_fac, t_cutoff);
 
+        /*
         ///// FOR DEBUGGING /////
         cout << "SHOWERED PROGENITOR " << i << endl;
         /////////////////////////
+        */
 
         i++;
         jets.push_back(jet);
@@ -562,15 +567,19 @@ vector<Particle> shower_event(Event& event, double Q_cutoff) {
 
     // apply global momentum conservation
 
+    /*
     ///// FOR DEBUGGING /////
     cout << "APPLY MOM CON" << endl;
     /////////////////////////
+    */
 
     vector<Particle> mom_con_jet_parts = global_mom_cons(jets);
 
+    /*
     ///// FOR DEBUGGING /////
     cout << "MOM CON DONE" << endl;
     ///// FOR DEBUGGING /////
+    */
 
     // merge the initial particles with the jets
     final_particles.reserve(final_particles.size() + mom_con_jet_parts.size());
@@ -585,9 +594,11 @@ vector<Particle> shower_event(Event& event, double Q_cutoff) {
     move(mom_con_jet_parts.begin(), mom_con_jet_parts.end(),
         back_inserter(final_particles));
 
+    /*
     ///// FOR DEBUGGING /////
     cout << "FINAL PARTICLES ADDED TO VECTOR" << endl;
     /////////////////////////
+    */
 
     return final_particles;
 }

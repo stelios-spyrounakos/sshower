@@ -105,9 +105,11 @@ double Get_t_em(double Q, double Q_cutoff, double aS_over, double Rand,
     double t_min = t_fac * Q_cutoff * Q_cutoff;
     double t_max = Q * Q;
     
+    /*
     ///// FOR DEBUGGING /////
     cout << "FINDING T_EM BETWEEN " << t_min << " AND " << t_max << endl;
     /////////////////////////
+    */
 
     int iter = 0;
     int max_iter = 1000;
@@ -135,11 +137,13 @@ double Get_t_em(double Q, double Q_cutoff, double aS_over, double Rand,
     
     gsl_root_fsolver_free(s);
 
+    /*
     ///// FOR DEBUGGING /////
     cout << "em_scale_func(root, &params): " << em_scale_func(root, &params)
         << ", TOLERANCE: " << tolerance << ", AND ITERATIONS: " << iter
         << ", WITH STATUS: " << status << endl;
     /////////////////////////
+    */
 
     if ( abs(em_scale_func(root, &params)) > tolerance ) {
         continue_evol = false;
