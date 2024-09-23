@@ -38,20 +38,24 @@ int main(int argc, char* argv[]) {
     // shower events
     double Q_cutoff = 0.935;    // (to match with Herwig 7)
     vector<Event> showered_events;
-    bool check_mom_conservation = true;
+    bool check_mom_conservation = false;
     showered_events.reserve(n_events);
     for (int i = 0; i < n_events; ++i) {
         Event showered_event;
 
+        /*
         ///// FOR DEBUGGING /////
         cout << "SHOWERING EVENT " << i << endl;
         /////////////////////////
+        */
 
         showered_event.particles = shower_event(events[i], Q_cutoff);
 
+        /*
         ///// FOR DEBUGGING /////
         cout << "SHOWERED EVENT " << i << endl;
         /////////////////////////
+        */
 
         showered_events.push_back(showered_event);
 
@@ -64,11 +68,13 @@ int main(int argc, char* argv[]) {
                 << ")." << endl;
         }
 
-        show_progress_bar(i / (n_events - 1));
+        show_progress_bar(double(i) / (n_events - 1));
 
+        /*
         ///// FOR DEBUGGING /////
         cout << endl << endl << endl << endl << endl;
         /////////////////////////
+        */
     }
 
     // write output lhe file

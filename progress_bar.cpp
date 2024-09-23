@@ -23,7 +23,7 @@ void show_progress_bar(double progress) {
             else { cout << " "; }
         }
         // \r to overwrite the same line
-        cout << "] " << setw(3) << percentage << " %\r";
+        cout << "] " << setw(3) << percentage << " %" << " \r";
         // flush to write immediately without waiting for the buffer to fill
         cout.flush();
         last_percentage = percentage;
